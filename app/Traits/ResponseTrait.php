@@ -10,11 +10,10 @@
             ]);
         }
         
-        public function errorResponse($data =[],$message){
+        public function errorResponse($error){
             return response()->json([
                 'success' => false,
-                'data' => $data,
-                'message' => $message
+                'message' => $error
             ]);
         }
     }
