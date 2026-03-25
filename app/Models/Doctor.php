@@ -20,4 +20,8 @@ class Doctor extends Model
     protected $casts = [
         'available_days' => 'array'
     ];
+
+    public function reservations(){
+        return $this->hasMany(Reservation::class);
+    }
 }
