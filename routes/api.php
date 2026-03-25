@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AIController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SymptomeController;
@@ -17,4 +18,5 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::apiResource('/doctors',DoctorController::class)->only(['index','show']);
     Route::post('/reservations/create/{doctorId}',[ReservationController::class,'store']);
     Route::apiResource('/reservations',ReservationController::class)->except('create');
+    Route::post('/ai/assistant',[AIController::class,'ask']);
 });
