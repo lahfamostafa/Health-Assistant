@@ -1,9 +1,9 @@
 <?php
 
 use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SymptomeController;
 use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register',[UserController::class,'register']);
@@ -15,4 +15,6 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::apiResource('/symptomes',SymptomeController::class);
     Route::get('/doctors/search',[DoctorController::class, 'search']);
     Route::apiResource('/doctors',DoctorController::class)->only(['index','show']);
+    Route::post('/reservations/create/{doctorId}',[ReservationController::class,'store']);
+    Route::apiResource('/reservations',ReservationController::class)->except('create');
 });
