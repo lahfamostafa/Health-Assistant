@@ -1,0 +1,968 @@
+openapi: 3.0.3
+info:
+  title: Health Assistant API
+  version: 1.0.0
+  description: |
+    Swagger/OpenAPI genere a partir du projet Laravel existant.
+
+tags:
+  - name: Auth
+  - name: Doctors
+  - name: Symptomes
+  - name: Reservations
+  - name: AI
+paths:
+  /register:
+    post:
+      tags: [Auth]
+      summary: Inscription utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              name: Jean Dupont
+              email: jean@example.com
+              password: secret123
+      responses:
+        '200':
+          description: Inscription reussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /login:
+    post:
+      tags: [Auth]
+      summary: Connexion utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: jean@example.com
+              password: secret123
+      responses:
+        '200':
+          description: Connexion reussie
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/LoginResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                success:
+                  value:
+                    success: true
+                    data:
+                      user:
+                        id: 1
+                        name: Jean Dupont
+                        email: jean@example.com
+                        email_verified_at: null
+                        created_at: '2026-03-27T16:00:00.000000Z'
+                        updated_at: '2026-03-27T16:00:00.000000Z'
+                      token: 1|sanctum-token
+                    message: login avec success
+                invalidCredentials:
+                  value:
+                    success: false
+                    message: donnees invalide
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /me:
+    get:
+      tags: [Auth]
+      summary: Recuperer le profil connecte
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profil courant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /logout:
+    post:
+      tags: [Auth]
+      summary: Deconnexion du token courant
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Deconnexion reussie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /doctors:
+    get:
+      tags: [Doctors]
+      summary: Lister les docteurs
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste des docteurs ou message d'absence
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DoctorCollectionResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /doctors/search:
+    get:
+      tags: [Doctors]
+      summary: Rechercher des docteurs
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: specialty
+          schema:
+            type: string
+          description: Filtre partiel sur la specialite
+        - in: query
+          name: city
+          schema:
+            type: string
+          description: Filtre partiel sur la ville
+      responses:
+        '200':
+          description: Resultat de recherche
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /doctors/{doctor}:
+    get:
+      tags: [Doctors]
+      summary: Recuperer un docteur
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DoctorId'
+      responses:
+        '200':
+          description: Detail du docteur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoctorSingleAsCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Le binding Laravel peut retourner 404 si l'identifiant n'existe pas
+
+  /symptomes:
+    get:
+      tags: [Symptomes]
+      summary: Lister les symptomes de l'utilisateur courant
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste des symptomes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymptomeCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Symptomes]
+      summary: Creer un symptome
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SymptomeRequest'
+            example:
+              name: Fievre
+              niveau: moderate
+              description: Fievre depuis deux jours
+              notes: Boire beaucoup d'eau
+      responses:
+        '200':
+          description: Symptome cree
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymptomeItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /symptomes/{symptome}:
+    get:
+      tags: [Symptomes]
+      summary: Recuperer un symptome
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SymptomeId'
+      responses:
+        '200':
+          description: Detail du symptome
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymptomeSingleAsCollectionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Le binding Laravel peut retourner 404 si l'identifiant n'existe pas
+    put:
+      tags: [Symptomes]
+      summary: Mettre a jour un symptome
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SymptomeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SymptomeUpdateRequest'
+      responses:
+        '200':
+          description: Symptome mis a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymptomeItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [Symptomes]
+      summary: Mettre a jour partiellement un symptome
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SymptomeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SymptomeUpdateRequest'
+      responses:
+        '200':
+          description: Symptome mis a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SymptomeItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Symptomes]
+      summary: Supprimer un symptome
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SymptomeId'
+      responses:
+        '200':
+          description: Symptome supprime
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptySuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reservations:
+    get:
+      tags: [Reservations]
+      summary: Lister les reservations de l'utilisateur courant
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Liste des reservations ou message d'absence
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ReservationCollectionResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Reservations]
+      summary: Route resource creee par Laravel mais non compatible avec la signature du controleur
+      description: |
+        Cette route apparait dans `route:list`, mais la methode `store()` du controleur attend aussi un parametre `doctorId`.
+        En l'etat actuel du projet, l'endpoint documente et exploitable pour creer une reservation est `POST /reservations/create/{doctorId}`.
+      deprecated: true
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationStoreBody'
+      responses:
+        '500':
+          description: Comportement probable en raison de la signature du controleur
+
+  /reservations/create/{doctorId}:
+    post:
+      tags: [Reservations]
+      summary: Creer une reservation pour un docteur
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DoctorIdPathCreate'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationStoreBody'
+            example:
+              date: '2026-04-10'
+              notes: Consultation de suivi
+      responses:
+        '200':
+          description: Reservation creee
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /reservations/{reservation}:
+    get:
+      tags: [Reservations]
+      summary: Recuperer une reservation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '200':
+          description: Detail de reservation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationItemResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Le binding Laravel peut retourner 404 si l'identifiant n'existe pas
+    put:
+      tags: [Reservations]
+      summary: Mettre a jour une reservation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationUpdateBody'
+      responses:
+        '200':
+          description: Reservation mise a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationBooleanResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    patch:
+      tags: [Reservations]
+      summary: Mettre a jour partiellement une reservation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationUpdateBody'
+      responses:
+        '200':
+          description: Reservation mise a jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationBooleanResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      tags: [Reservations]
+      summary: Supprimer une reservation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '200':
+          description: Reservation supprimee
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationDeleteResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /ai/assistant:
+    post:
+      tags: [AI]
+      summary: Generer un conseil general a partir des 5 derniers symptomes
+      description: |
+        Aucun body n'est exploite par le controleur actuel.
+        Le service assemble les 5 derniers symptomes de l'utilisateur, interroge Gemini,
+        puis retourne un court conseil en francais.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Conseil genere ou message d'absence de symptomes
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/AIAdviceResponse'
+                  - $ref: '#/components/schemas/ErrorWithArrayDataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum token
+
+  parameters:
+    DoctorId:
+      in: path
+      name: doctor
+      required: true
+      schema:
+        type: integer
+        example: 1
+    DoctorIdPathCreate:
+      in: path
+      name: doctorId
+      required: true
+      schema:
+        type: integer
+        example: 1
+    SymptomeId:
+      in: path
+      name: symptome
+      required: true
+      schema:
+        type: integer
+        example: 1
+    ReservationId:
+      in: path
+      name: reservation
+      required: true
+      schema:
+        type: integer
+        example: 1
+
+  responses:
+    Unauthorized:
+      description: Non authentifie
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: Unauthenticated.
+    ValidationError:
+      description: Erreur de validation Laravel
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Jean Dupont
+        email:
+          type: string
+          format: email
+          example: jean@example.com
+        email_verified_at:
+          type: string
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Dr. Ahmed Benali
+        specialty:
+          type: string
+          example: Generaliste
+        city:
+          type: string
+          example: Casablanca
+        years_of_experience:
+          type: integer
+          example: 10
+        consultation_price:
+          type: number
+          format: float
+          example: 200
+        available_days:
+          type: array
+          items:
+            type: string
+          example: [Lundi, Mercredi, Vendredi]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Symptome:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Fievre
+        niveau:
+          type: string
+          enum: [mild, moderate, severe]
+          example: moderate
+        description:
+          type: string
+          example: Fievre depuis deux jours
+        date_recorded:
+          type: string
+          format: date
+          example: '2026-03-27'
+        notes:
+          type: string
+          example: Boire beaucoup d'eau
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        doctor_id:
+          type: integer
+          example: 2
+        reservation_date:
+          type: string
+          format: date
+          example: '2026-04-10'
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled]
+          example: pending
+        notes:
+          type: string
+          example: Consultation de suivi
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+
+    SymptomeRequest:
+      type: object
+      required: [name, niveau, description, notes]
+      properties:
+        name:
+          type: string
+        niveau:
+          type: string
+          enum: [mild, moderate, severe]
+        description:
+          type: string
+        notes:
+          type: string
+
+    SymptomeUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        niveau:
+          type: string
+          enum: [mild, moderate, severe]
+        description:
+          type: string
+        notes:
+          type: string
+
+    ReservationStoreBody:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+          format: date
+          pattern: '^\\d{4}-\\d{2}-\\d{2}$'
+          example: '2026-04-10'
+        notes:
+          type: string
+          example: Consultation de suivi
+      description: Le `doctor_id` n'est pas attendu ici car il passe dans l'URL.
+
+    ReservationUpdateBody:
+      type: object
+      required: [date]
+      properties:
+        date:
+          type: string
+          format: date
+          pattern: '^\\d{4}-\\d{2}-\\d{2}$'
+          example: '2026-04-10'
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled]
+          example: confirmed
+        notes:
+          type: string
+          example: Patient confirme le rendez-vous
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/User'
+        message:
+          type: string
+          example: register reusit !
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            token:
+              type: string
+              example: 1|sanctum-token
+        message:
+          type: string
+          example: login avec success
+
+    MeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        message:
+          type: string
+          example: mon profile
+
+    DoctorCollectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Doctor'
+        message:
+          type: string
+          example: voila les docteurs disponibles
+
+    DoctorSingleAsCollectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Doctor'
+        message:
+          type: string
+          example: voila les details de ce docteur
+
+    SymptomeCollectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Symptome'
+        message:
+          type: string
+          example: voila vos symptomes
+
+    SymptomeItemResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Symptome'
+        message:
+          type: string
+          example: symptome cree avec success
+
+    SymptomeSingleAsCollectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Symptome'
+        message:
+          type: string
+          example: Voila les details de la symptome
+
+    ReservationCollectionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reservation'
+        message:
+          type: string
+          example: Voila vos reservations
+
+    ReservationItemResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/Reservation'
+        message:
+          type: string
+          example: reservation cree avec success
+
+    ReservationBooleanResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: reservation modifie avec success
+
+    ReservationDeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: string
+          example: ''
+        message:
+          type: string
+          example: Reservation supprime avec success
+
+    AIAdviceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            advice:
+              type: string
+              example: Reposez-vous, hydratez-vous bien et surveillez l'evolution de vos symptomes.
+            generated_at:
+              type: string
+              format: date-time
+        message:
+          type: string
+          example: Conseils generes par l'IA
+
+    EmptySuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          oneOf:
+            - type: array
+              items: {}
+              example: []
+            - type: object
+              additionalProperties: false
+            - type: string
+              example: ''
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: pas de docteurs
+
+    ErrorWithArrayDataResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          type: array
+          items: {}
+          example: []
+        message:
+          type: string
+          example: Aucun symptome trouve
+
+    ValidationError:
+      type: object
+      properties:
+        message:
+          type: string
+          example: The given data was invalid.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
